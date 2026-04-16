@@ -1,5 +1,6 @@
-# Never commit filled-in secrets or configs
+# Never commit secrets or configs (filled or template)
 management/cluster-secrets.yaml
+management/cluster-secrets.yaml.template
 management/cluster-config.yaml
 *.secret
 *.secret.yaml
