@@ -1,0 +1,58 @@
+# ── Phase 1: Create the Workspace ─────────────────────────────────────────────
+# Flux creates the Workspace CR. Kommander provisions a namespace with a
+# random suffix (e.g., flux-demo-github-a1b2c).
+#
+# The namespace-sync Job (management/namespace-sync.yaml) patches the
+# per-cluster ConfigMap with the real namespace — no manual lookup needed.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: flux-demo-workspace
+  namespace: kommander
+spec:
+  interval: 10m
+  retryInterval: 1m
+  sourceRef:
+    kind: GitRepository
+    name: flux-clusterdeploy-demo
+  path: ./workspace
+  prune: false                              # SAFETY: never auto-delete workspaces
+  wait: true                                # Wait for Workspace CR to be accepted
+  timeout: 5m
+---
+# ── Phase 2: Deploy the Workload Cluster ─────────────────────────────────────
+# Depends on Phase 1 — waits for the workspace to exist.
+#
+# Flux substitutes all ${VAR} placeholders from two sources:
+#   - ConfigMap: infrastructure config (IPs, names, workspace namespace)
+#   - Secret:    credentials (passwords, SSH key)
+#
+# Phase 2 retries until the ConfigMap has a valid WORKSPACE_NAMESPACE
+# (patched by the namespace-sync Job).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: nkp-wrkld-demo-flux-github01
+  namespace: kommander
+spec:
+  dependsOn:
+    - name: flux-demo-workspace             # Phase 1 must complete first
+  interval: 10m
+  retryInterval: 2m
+  sourceRef:
+    kind: GitRepository
+    name: flux-clusterdeploy-demo
+  path: ./clusters/nkp-wrkld-demo-flux-github01
+  prune: false                              # SAFETY: never auto-delete clusters
+  wait: false                               # Cluster provisioning takes time
+  timeout: 30m
+  postBuild:
+    substituteFrom:
+      # Non-sensitive: infra config, networking, workspace namespace
+      - kind: ConfigMap
+        name: nkp-wrkld-demo-flux-github01-config
+        optional: false
+      # Sensitive: PC password, SSH key, Harbor password
+      - kind: Secret
+        name: nkp-wrkld-demo-flux-github01-secrets
+        optional: false

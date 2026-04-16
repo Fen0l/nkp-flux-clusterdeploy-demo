@@ -1,0 +1,89 @@
+# ── One-shot Job: patches ConfigMap with the real workspace namespace ──────────
+# Apply once during bootstrap. The Job waits for the Workspace CR, reads
+# .status.namespaceRef.name, and patches the per-cluster ConfigMap.
+#
+# Air-gapped: push bitnami/kubectl:1.34 to your registry mirror.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: namespace-sync
+  namespace: kommander
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: namespace-sync
+rules:
+  - apiGroups: ["workspaces.kommander.mesosphere.io"]
+    resources: ["workspaces"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: namespace-sync
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: namespace-sync
+subjects:
+  - kind: ServiceAccount
+    name: namespace-sync
+    namespace: kommander
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: namespace-sync
+  namespace: kommander
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: namespace-sync
+  namespace: kommander
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: namespace-sync
+subjects:
+  - kind: ServiceAccount
+    name: namespace-sync
+    namespace: kommander
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: namespace-sync-nkp-wrkld-demo-flux-github01
+  namespace: kommander
+spec:
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 10
+  template:
+    spec:
+      serviceAccountName: namespace-sync
+      containers:
+        - name: sync
+          image: bitnami/kubectl:1.34
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "Waiting for workspace flux-demo-github..."
+              until NS=$(kubectl get workspace flux-demo-github \
+                -o jsonpath='{.status.namespaceRef.name}' 2>/dev/null) \
+                && [ -n "$NS" ]; do
+                sleep 5
+              done
+              echo "Namespace: $NS"
+              kubectl -n kommander patch configmap \
+                nkp-wrkld-demo-flux-github01-config \
+                --type merge \
+                -p "{\"data\":{\"WORKSPACE_NAMESPACE\":\"$NS\"}}"
+              echo "Done — WORKSPACE_NAMESPACE=$NS"
+      restartPolicy: OnFailure

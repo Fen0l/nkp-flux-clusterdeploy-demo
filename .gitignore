@@ -1,0 +1,11 @@
+# Never commit filled-in secrets or configs
+management/cluster-secrets.yaml
+management/cluster-config.yaml
+*.secret
+*.secret.yaml
+
+# Editor files
+*.swp
+*.swo
+*~
+.DS_Store

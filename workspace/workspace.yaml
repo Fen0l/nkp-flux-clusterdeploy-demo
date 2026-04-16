@@ -1,0 +1,11 @@
+# ── NKP Workspace ─────────────────────────────────────────────────────────────
+# Kommander creates a namespace based on spec.namespaceName.
+# Phase 2 (cluster) depends on this — namespace must exist first.
+apiVersion: workspaces.kommander.mesosphere.io/v1alpha1
+kind: Workspace
+metadata:
+  name: flux-demo-github
+  annotations:
+    kommander.mesosphere.io/display-name: "Flux Demo (GitHub)"
+spec:
+  namespaceName: flux-demo-github

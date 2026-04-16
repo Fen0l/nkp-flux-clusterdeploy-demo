@@ -1,0 +1,170 @@
+# ── CAPI Cluster with ClusterClass topology 
+# ClusterClass nkp-nutanix-v2.17.1 is pre-installed on the NKP management cluster.
+# All ${VAR} placeholders are injected by Flux postBuild.substituteFrom.
+#
+# Adapted from: nkp create cluster --dry-run -o yaml
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  labels:
+    cluster.x-k8s.io/provider: nutanix
+    konvoy.d2iq.io/cluster-name: nkp-wrkld-demo-flux-github01
+    konvoy.d2iq.io/provider: nutanix
+  name: nkp-wrkld-demo-flux-github01
+  namespace: ${WORKSPACE_NAMESPACE}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+    services:
+      cidrBlocks:
+      - 10.96.0.0/12
+  controlPlaneEndpoint:
+    host: ""
+    port: 0
+  topology:
+    class: nkp-nutanix-v2.17.1
+    controlPlane:
+      metadata: {}
+      replicas: 1
+    variables:
+    - name: clusterConfig
+      value:
+        addons:
+          ccm:
+            credentials:
+              secretRef:
+                name: nkp-wrkld-demo-flux-github01-pc-credentials
+            strategy: HelmAddon
+          clusterAutoscaler:
+            strategy: HelmAddon
+          cni:
+            provider: Cilium
+            strategy: HelmAddon
+          cosi:
+            strategy: HelmAddon
+          csi:
+            defaultStorage:
+              provider: nutanix
+              storageClassConfig: volume
+            providers:
+              nutanix:
+                credentials:
+                  secretRef:
+                    name: nkp-wrkld-demo-flux-github01-pc-credentials-for-csi
+                storageClassConfigs:
+                  volume:
+                    allowExpansion: true
+                    parameters:
+                      csi.storage.k8s.io/fstype: ext4
+                      description: CSI StorageClass nutanix-volume
+                      flashMode: DISABLED
+                      hypervisorAttached: ENABLED
+                      storageContainer: ${STORAGE_CONTAINER}
+                      storageType: NutanixVolumes
+                    reclaimPolicy: Delete
+                    volumeBindingMode: WaitForFirstConsumer
+                strategy: HelmAddon
+            snapshotController:
+              strategy: HelmAddon
+          konnectorAgent:
+            credentials:
+              secretRef:
+                name: nkp-wrkld-demo-flux-github01-pc-credentials-for-konnector-agent
+          nfd:
+            strategy: HelmAddon
+          serviceLoadBalancer:
+            configuration:
+              addressRanges:
+              - end: ${LB_IP_END}
+                start: ${LB_IP_START}
+            provider: MetalLB
+        controlPlane:
+          autoRenewCertificates:
+            daysBeforeExpiry: 180
+          nodeRegistration:
+            ignorePreflightErrors:
+            - SystemVerification
+          nutanix:
+            machineDetails:
+              bootType: uefi
+              cluster:
+                name: ${PE_CLUSTER}
+                type: name
+              image:
+                name: ${VM_IMAGE}
+                type: name
+              memorySize: 8Gi
+              subnets:
+              - name: ${SUBNET}
+                type: name
+              systemDiskSize: 80Gi
+              vcpuSockets: 4
+              vcpusPerSocket: 1
+          users:
+          - name: konvoy
+            sshAuthorizedKeys:
+            - "${SSH_PUBLIC_KEY}"
+            sudo: "ALL=(ALL) NOPASSWD:ALL"
+        dns:
+          coreDNS: {}
+        encryptionAtRest:
+          providers:
+          - secretbox: {}
+        globalImageRegistryMirror:
+          credentials:
+            secretRef:
+              name: nkp-wrkld-demo-flux-github01-image-registry-mirror-credentials
+          url: ${REGISTRY_MIRROR_URL}
+        kubeProxy:
+          mode: disabled
+        nutanix:
+          controlPlaneEndpoint:
+            host: ${CONTROL_PLANE_VIP}
+            port: 6443
+            virtualIP:
+              provider: KubeVIP
+          prismCentralEndpoint:
+            credentials:
+              secretRef:
+                name: nkp-wrkld-demo-flux-github01-pc-credentials
+            insecure: true
+            url: https://${PC_ENDPOINT}:9440
+    version: v1.34.3
+    workers:
+      machineDeployments:
+      - class: default-worker
+        metadata:
+          annotations:
+            cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: "2"
+            cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: "2"
+        name: md-0
+        variables:
+          overrides:
+          - name: workerConfig
+            value:
+              nodeRegistration:
+                ignorePreflightErrors:
+                - SystemVerification
+              nutanix:
+                machineDetails:
+                  bootType: uefi
+                  cluster:
+                    name: ${PE_CLUSTER}
+                    type: name
+                  image:
+                    name: ${VM_IMAGE}
+                    type: name
+                  memorySize: 16Gi
+                  subnets:
+                  - name: ${SUBNET}
+                    type: name
+                  systemDiskSize: 80Gi
+                  vcpuSockets: 4
+                  vcpusPerSocket: 1
+              users:
+              - name: konvoy
+                sshAuthorizedKeys:
+                - "${SSH_PUBLIC_KEY}"
+                sudo: "ALL=(ALL) NOPASSWD:ALL"
