@@ -1,4 +1,4 @@
-# ── Phase 1: Create the Workspace ─────────────────────────────────────────────
+# ── Phase 1: Create the Workspace 
 # Flux creates the Workspace CR. Kommander provisions a namespace with a
 # random suffix (e.g., flux-demo-github-a1b2c).
 #
@@ -20,7 +20,7 @@ spec:
   wait: true                                # Wait for Workspace CR to be accepted
   timeout: 5m
 ---
-# ── Phase 2: Deploy the Workload Cluster ─────────────────────────────────────
+# ── Phase 2: Deploy the Workload Cluster 
 # Depends on Phase 1 — waits for the workspace to exist.
 #
 # Flux substitutes all ${VAR} placeholders from two sources:
