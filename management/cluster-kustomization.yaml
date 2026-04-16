@@ -1,58 +1,76 @@
-# ── Phase 1: Create the Workspace 
-# Flux creates the Workspace CR. Kommander provisions a namespace with a
-# random suffix (e.g., flux-demo-github-a1b2c).
-#
-# The namespace-sync Job (management/namespace-sync.yaml) patches the
-# per-cluster ConfigMap with the real namespace — no manual lookup needed.
+# ── Phase 1: Create the Workspace ─────────────────────────────────────────────
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: flux-demo-workspace
-  namespace: kommander
+  namespace: gitops-mgmt-gitlab-jfbpb
 spec:
   interval: 10m
   retryInterval: 1m
+  serviceAccountName: flux-deployer
   sourceRef:
     kind: GitRepository
     name: flux-clusterdeploy-demo
   path: ./workspace
-  prune: false                              # SAFETY: never auto-delete workspaces
-  wait: true                                # Wait for Workspace CR to be accepted
+  prune: false
+  wait: true
   timeout: 5m
 ---
-# ── Phase 2: Deploy the Workload Cluster 
-# Depends on Phase 1 — waits for the workspace to exist.
-#
-# Flux substitutes all ${VAR} placeholders from two sources:
-#   - ConfigMap: infrastructure config (IPs, names, workspace namespace)
-#   - Secret:    credentials (passwords, SSH key)
-#
-# Phase 2 retries until the ConfigMap has a valid WORKSPACE_NAMESPACE
-# (patched by the namespace-sync Job).
+# ── Phase 2a: Create companion Secrets in workspace namespace ─────────────────
+# Must exist BEFORE the Cluster CR — the CAREN preflight webhook validates
+# PC connectivity using these secrets during dry-run.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: nkp-wrkld-demo-flux-github01
-  namespace: kommander
+  name: nkp-wrkld-demo-flux-github01-secrets
+  namespace: gitops-mgmt-gitlab-jfbpb
 spec:
   dependsOn:
-    - name: flux-demo-workspace             # Phase 1 must complete first
+    - name: flux-demo-workspace
   interval: 10m
-  retryInterval: 2m
+  retryInterval: 1m
+  serviceAccountName: flux-deployer
   sourceRef:
     kind: GitRepository
     name: flux-clusterdeploy-demo
   path: ./clusters/nkp-wrkld-demo-flux-github01
-  prune: false                              # SAFETY: never auto-delete clusters
-  wait: false                               # Cluster provisioning takes time
-  timeout: 30m
+  prune: false
+  wait: true
+  timeout: 5m
   postBuild:
     substituteFrom:
-      # Non-sensitive: infra config, networking, workspace namespace
       - kind: ConfigMap
         name: nkp-wrkld-demo-flux-github01-config
         optional: false
-      # Sensitive: PC password, SSH key, Harbor password
+      - kind: Secret
+        name: nkp-wrkld-demo-flux-github01-secrets
+        optional: false
+---
+# ── Phase 2b: Deploy the Cluster CR ──────────────────────────────────────────
+# Depends on 2a — companion secrets must exist for preflight validation.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: nkp-wrkld-demo-flux-github01
+  namespace: gitops-mgmt-gitlab-jfbpb
+spec:
+  dependsOn:
+    - name: nkp-wrkld-demo-flux-github01-secrets
+  interval: 10m
+  retryInterval: 2m
+  serviceAccountName: flux-deployer
+  sourceRef:
+    kind: GitRepository
+    name: flux-clusterdeploy-demo
+  path: ./clusters/nkp-wrkld-demo-flux-github01/cluster
+  prune: false
+  wait: false
+  timeout: 30m
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: nkp-wrkld-demo-flux-github01-config
+        optional: false
       - kind: Secret
         name: nkp-wrkld-demo-flux-github01-secrets
         optional: false

@@ -10,7 +10,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
   name: flux-clusterdeploy-demo
-  namespace: kommander
+  namespace: gitops-mgmt-gitlab-jfbpb
 spec:
   interval: 5m
   ref:

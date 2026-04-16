@@ -10,7 +10,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nkp-wrkld-demo-flux-github01-config
-  namespace: kommander
+  namespace: gitops-mgmt-gitlab-jfbpb
 data:
   # ── Workspace namespace (auto-populated by the namespace-sync Job) ──────────
   # Leave as-is — Phase 1.5 patches this with the real namespace.

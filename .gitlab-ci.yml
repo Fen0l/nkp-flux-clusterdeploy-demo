@@ -1,0 +1,90 @@
+# ── GitLab CI: Sync secrets + config to NKP management cluster ───────────────
+#
+# Reads from GitLab project Settings > CI/CD > Variables and creates:
+#   - ConfigMap: nkp-wrkld-demo-flux-github01-config (non-sensitive)
+#   - Secret:    nkp-wrkld-demo-flux-github01-secrets (credentials)
+#
+# Note: WORKSPACE_NAMESPACE is NOT set here — it is auto-populated by the
+#       namespace-sync Job (Phase 1.5) after Flux creates the workspace.
+#
+# Prerequisites:
+#   - GitLab Runner registered on the cluster network with tag: nkp-runner
+#   - GitLab CI/CD Variables configured (all marked Protected + Masked)
+#
+# Required GitLab CI/CD Variables:
+#   KUBECONFIG_BASE64        - base64-encoded kubeconfig for the mgmt cluster
+#   PC_ENDPOINT              - Prism Central IP
+#   PC_USER                  - Prism Central username
+#   PC_PASSWORD              - Prism Central password
+#   PE_CLUSTER               - Prism Element cluster name
+#   SUBNET                   - AHV subnet name
+#   STORAGE_CONTAINER        - Nutanix storage container name
+#   VM_IMAGE                 - Node OS image name
+#   CONTROL_PLANE_VIP        - Control plane virtual IP
+#   LB_IP_START              - MetalLB pool start
+#   LB_IP_END                - MetalLB pool end
+#   SSH_PUBLIC_KEY           - SSH public key for node access
+#   REGISTRY_MIRROR_URL      - Air-gapped registry URL
+#   HARBOR_USER              - Registry mirror username
+#   HARBOR_PASSWORD          - Registry mirror password
+#
+
+stages:
+  - sync
+
+sync-cluster-config:
+  stage: sync
+  image: harbor.itcs.local/nkp/bitnami/kubectl:1.34
+  tags:
+    - nkp-runner
+
+  rules:
+    - changes:
+        - clusters/**/*
+      when: always
+    - when: manual
+
+  before_script:
+    - mkdir -p ~/.kube
+    - echo "${KUBECONFIG_BASE64}" | base64 -d > ~/.kube/config
+    - chmod 600 ~/.kube/config
+
+  script:
+    - |
+      echo "Creating/updating ConfigMap (non-sensitive)..."
+      # WORKSPACE_NAMESPACE is auto-populated by the namespace-sync Job.
+      # Initialize with placeholder — the Job patches it after workspace creation.
+      kubectl create configmap nkp-wrkld-demo-flux-github01-config \
+        --namespace=kommander \
+        --from-literal=WORKSPACE_NAMESPACE="pending-namespace-sync" \
+        --from-literal=PC_ENDPOINT="${PC_ENDPOINT}" \
+        --from-literal=PE_CLUSTER="${PE_CLUSTER}" \
+        --from-literal=SUBNET="${SUBNET}" \
+        --from-literal=STORAGE_CONTAINER="${STORAGE_CONTAINER}" \
+        --from-literal=VM_IMAGE="${VM_IMAGE}" \
+        --from-literal=CONTROL_PLANE_VIP="${CONTROL_PLANE_VIP}" \
+        --from-literal=LB_IP_START="${LB_IP_START}" \
+        --from-literal=LB_IP_END="${LB_IP_END}" \
+        --from-literal=REGISTRY_MIRROR_URL="${REGISTRY_MIRROR_URL}" \
+        --dry-run=client -o yaml | kubectl apply -f -
+    - |
+      echo "Creating/updating Secret (credentials)..."
+      kubectl create secret generic nkp-wrkld-demo-flux-github01-secrets \
+        --namespace=kommander \
+        --from-literal=PC_USER="${PC_USER}" \
+        --from-literal=PC_PASSWORD="${PC_PASSWORD}" \
+        --from-literal=SSH_PUBLIC_KEY="${SSH_PUBLIC_KEY}" \
+        --from-literal=HARBOR_USER="${HARBOR_USER}" \
+        --from-literal=HARBOR_PASSWORD="${HARBOR_PASSWORD}" \
+        --dry-run=client -o yaml | kubectl apply -f -
+    - |
+      echo "Verifying..."
+      kubectl get configmap nkp-wrkld-demo-flux-github01-config -n kommander && echo "ConfigMap OK"
+      kubectl get secret nkp-wrkld-demo-flux-github01-secrets -n kommander && echo "Secret OK"
+    - |
+      echo "Triggering Flux reconciliation..."
+      kubectl annotate gitrepository flux-clusterdeploy-demo -n kommander \
+        reconcile.fluxcd.io/requestedAt="$(date +%s)" --overwrite 2>/dev/null || true
+
+  after_script:
+    - rm -f ~/.kube/config
