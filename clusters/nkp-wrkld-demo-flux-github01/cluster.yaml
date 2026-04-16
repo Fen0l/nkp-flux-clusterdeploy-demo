@@ -102,11 +102,6 @@ spec:
               systemDiskSize: 80Gi
               vcpuSockets: 4
               vcpusPerSocket: 1
-          users:
-          - name: konvoy
-            sshAuthorizedKeys:
-            - "${SSH_PUBLIC_KEY}"
-            sudo: "ALL=(ALL) NOPASSWD:ALL"
         dns:
           coreDNS: {}
         encryptionAtRest:
@@ -163,8 +158,3 @@ spec:
                   systemDiskSize: 80Gi
                   vcpuSockets: 4
                   vcpusPerSocket: 1
-              users:
-              - name: konvoy
-                sshAuthorizedKeys:
-                - "${SSH_PUBLIC_KEY}"
-                sudo: "ALL=(ALL) NOPASSWD:ALL"
