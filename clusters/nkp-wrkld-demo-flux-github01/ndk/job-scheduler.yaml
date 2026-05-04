@@ -1,0 +1,15 @@
+# ── JobScheduler 
+# Drives the cadence of automatic snapshots. Minimum interval is 60 minutes —
+# the controller rejects anything shorter.
+#
+# Note: this CRD lives under scheduler.nutanix.com, NOT dataservices.nutanix.com.
+apiVersion: scheduler.nutanix.com/v1alpha1
+kind: JobScheduler
+metadata:
+  name: stateful-demo-hourly
+  namespace: ${APP_NAMESPACE}
+  labels:
+    app.kubernetes.io/part-of: ndk-gitops-demo
+spec:
+  schedule:
+    interval: ${SCHEDULE_INTERVAL_MINUTES}

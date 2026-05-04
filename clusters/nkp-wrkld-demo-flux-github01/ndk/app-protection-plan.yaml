@@ -1,0 +1,17 @@
+# ── AppProtectionPlan 
+# Binds Application ↔ ProtectionPlan. This is the trigger — once it lands,
+# the JobScheduler fires and the first ApplicationSnapshot is produced
+# within one schedule cycle.
+apiVersion: dataservices.nutanix.com/v1alpha1
+kind: AppProtectionPlan
+metadata:
+  name: stateful-demo-protection
+  namespace: ${APP_NAMESPACE}
+  labels:
+    app.kubernetes.io/part-of: ndk-gitops-demo
+spec:
+  applicationName: stateful-demo
+  labels:
+    appName: stateful-demo
+  protectionPlanNames:
+    - stateful-demo-local

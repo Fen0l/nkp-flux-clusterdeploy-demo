@@ -1,0 +1,9 @@
+# ── Demo app namespace 
+# All ${VAR} placeholders are injected by Flux postBuild.substituteFrom from
+# ConfigMap/Secret on the workload cluster.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${APP_NAMESPACE}
+  labels:
+    app.kubernetes.io/part-of: ndk-gitops-demo

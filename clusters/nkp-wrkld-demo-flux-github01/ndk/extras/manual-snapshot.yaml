@@ -1,0 +1,17 @@
+# ── Manual ApplicationSnapshot 
+# An explicit, named snapshot taken outside the JobScheduler cadence.
+# Useful before disruptive changes (upgrade, schema migration, demo disaster).
+#
+# expiresAfter is independent of ProtectionPlan retention — this snapshot is
+# garbage-collected after the duration expires regardless of retentionCount.
+apiVersion: dataservices.nutanix.com/v1alpha1
+kind: ApplicationSnapshot
+metadata:
+  name: pre-disaster
+  namespace: ${APP_NAMESPACE}
+  labels:
+    app.kubernetes.io/part-of: ndk-gitops-demo
+    demo.itcs.local/role: pre-disaster
+spec:
+  applicationName: stateful-demo
+  expiresAfter: 24h

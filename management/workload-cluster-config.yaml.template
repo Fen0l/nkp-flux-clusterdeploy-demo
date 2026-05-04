@@ -1,0 +1,22 @@
+# ── Template: ConfigMap for the workload-side Flux Kustomizations 
+# Apply on the workload cluster — used by postBuild.substituteFrom in
+# stateful-demo-app and stateful-demo-ndk Kustomizations.
+#
+#   kubectl --kubeconfig=<workload>.conf apply -f workload-cluster-config.yaml
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workload-cluster-config
+  namespace: kommander-flux
+data:
+  # ── Demo workload 
+  APP_NAMESPACE: "demo-app"
+  PVC_SIZE: "1Gi"
+
+  # ── NDK protection schedule 
+  # JobScheduler minimum is 60 minutes — below that the controller rejects.
+  SCHEDULE_INTERVAL_MINUTES: "60"
+
+  # ── Retention (1 to 15) 
+  RETENTION_COUNT: "5"

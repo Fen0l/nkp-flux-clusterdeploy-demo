@@ -1,0 +1,16 @@
+# ── ApplicationSnapshotRestore 
+# Brings the workload back from a named snapshot. PRECONDITIONS:
+#   1. The Deployment is scaled to 0 (releases volume mount).
+#   2. The PVC is deleted (NDK creates a fresh one bound to the snapshot).
+# Skipping either keeps the restore stuck at status: Restoring forever.
+apiVersion: dataservices.nutanix.com/v1alpha1
+kind: ApplicationSnapshotRestore
+metadata:
+  name: pre-disaster-restore
+  namespace: ${APP_NAMESPACE}
+  labels:
+    app.kubernetes.io/part-of: ndk-gitops-demo
+spec:
+  applicationSnapshotName: pre-disaster
+  restoreOptions:
+    overwriteExisting: false

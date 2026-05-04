@@ -1,0 +1,25 @@
+# ── Template: NDK StorageCluster registration (one-time, not GitOps) 
+# StorageCluster wires NDK to a specific PE/PC pair. Values are environment-
+# specific (PE UUID, PC UUID) and almost never change — keep this out of Git
+# and apply once per workload cluster.
+#
+# Discover the UUIDs:
+#
+#   # PC UUID (from Prism Central)
+#   curl -sk -u admin:<pwd> https://<PC_IP>:9440/api/clustermgmt/v4.0/config/clusters \
+#     | jq -r '.data[] | select(.config.clusterFunction[]? == "PRISM_CENTRAL") | .extId'
+#
+#   # PE UUID
+#   curl -sk -u admin:<pwd> https://<PC_IP>:9440/api/clustermgmt/v4.0/config/clusters \
+#     | jq -r '.data[] | select(.name == "<PE_NAME>") | .extId'
+#
+# Apply on the workload cluster:
+#   kubectl --kubeconfig=<workload>.conf apply -f storage-cluster.yaml
+#
+apiVersion: dataservices.nutanix.com/v1alpha1
+kind: StorageCluster
+metadata:
+  name: pikachu                             # lowercase, matches the PE name
+spec:
+  storageServerUuid:    "<PE_UUID>"         # PE cluster UUID from PC
+  managementServerUuid: "<PC_UUID>"         # PC UUID from PC

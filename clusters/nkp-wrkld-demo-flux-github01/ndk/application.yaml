@@ -1,0 +1,25 @@
+# ── NDK Application CR 
+# Defines the unit of protection. The label selector decides which K8s
+# resources NDK packages into each ApplicationSnapshot — Deployment, PVC,
+# Service, ConfigMap, anything with `app.kubernetes.io/instance: stateful-demo`.
+#
+# Application is the ONLY mutable NDK CR — selectors can be widened later.
+apiVersion: dataservices.nutanix.com/v1alpha1
+kind: Application
+metadata:
+  name: stateful-demo
+  namespace: ${APP_NAMESPACE}
+  labels:
+    app.kubernetes.io/part-of: ndk-gitops-demo
+spec:
+  applicationSelector:
+    resourceLabelSelectors:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/instance: stateful-demo
+        excludeResources:
+          # CiliumEndpoint is per-pod ephemeral state — never restore it.
+          - group: cilium.io
+            kind: CiliumEndpoint
+  start: true
+  useExistingConfig: false

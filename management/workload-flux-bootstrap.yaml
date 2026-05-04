@@ -1,0 +1,133 @@
+###############################################################################
+#  Workload-cluster Flux bootstrap — Phase 3 (app) + Phase 4 (NDK)
+#
+#  Apply ONCE on the workload cluster (NOT the management cluster):
+#
+#    kubectl --kubeconfig=<workload>.conf apply -f management/workload-flux-bootstrap.yaml
+#    kubectl --kubeconfig=<workload>.conf apply -f management/workload-cluster-config.yaml
+#
+#  After this, every push to the Git repo reconciles into the workload
+#  cluster automatically. Drift on the cluster is overwritten by Git.
+#
+#  Prerequisites on the workload cluster:
+#    - NKP-managed cluster with kommander-flux namespace populated by Konnector
+#    - NDK 2.1 installed in ntnx-system (Helm install — see NDK guide)
+#    - StorageCluster CR registered (apply storage-cluster.yaml.template once)
+#    - Network egress to github.com (or use the GitLab/internal URL)
+###############################################################################
+
+
+# ── ServiceAccount used by Flux Kustomizations on the workload cluster
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flux-deployer
+  namespace: kommander-flux
+---
+# ── RBAC: scoped to what the demo actually needs
+# Avoids cluster-admin. Only grants what the Kustomizations apply.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flux-deployer-ndk-demo
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces", "services", "configmaps", "secrets", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["dataservices.nutanix.com"]
+    resources: ["applications", "protectionplans", "appprotectionplans", "applicationsnapshots", "applicationsnapshotrestores"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["scheduler.nutanix.com"]
+    resources: ["jobschedulers"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: flux-deployer-ndk-demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: flux-deployer-ndk-demo
+subjects:
+  - kind: ServiceAccount
+    name: flux-deployer
+    namespace: kommander-flux
+---
+# ── GitRepository — same repo as mgmt-side Flux
+# For private repos, create a github-repo-auth Secret first and uncomment
+# secretRef. The repo URL must be reachable from the workload cluster.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: flux-clusterdeploy-demo
+  namespace: kommander-flux
+spec:
+  interval: 5m
+  ref:
+    branch: main
+  url: https://github.com/Fen0l/nkp-flux-clusterdeploy-demo.git
+  # secretRef:
+  #   name: github-repo-auth
+  ignore: |
+    /README.md
+    /DEMO-RUNBOOK.md
+    /management/
+    /workspace/
+    /clusters/nkp-wrkld-demo-flux-github01/cluster/
+    /LICENSE
+    /.github/
+    /.gitlab-ci.yml
+---
+# ── Phase 3: Demo app reconciliation
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: stateful-demo-app
+  namespace: kommander-flux
+spec:
+  interval: 10m
+  retryInterval: 1m
+  serviceAccountName: flux-deployer
+  sourceRef:
+    kind: GitRepository
+    name: flux-clusterdeploy-demo
+  path: ./clusters/nkp-wrkld-demo-flux-github01/app
+  prune: true
+  wait: true
+  timeout: 5m
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: workload-cluster-config
+        optional: false
+---
+# ── Phase 4: NDK protection — depends on Phase 3
+# Application CR needs the workload labels to exist before its selector
+# resolves; dependsOn enforces the ordering on first apply.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: stateful-demo-ndk
+  namespace: kommander-flux
+spec:
+  dependsOn:
+    - name: stateful-demo-app
+  interval: 10m
+  retryInterval: 1m
+  serviceAccountName: flux-deployer
+  sourceRef:
+    kind: GitRepository
+    name: flux-clusterdeploy-demo
+  path: ./clusters/nkp-wrkld-demo-flux-github01/ndk
+  prune: true
+  wait: true
+  timeout: 5m
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: workload-cluster-config
+        optional: false

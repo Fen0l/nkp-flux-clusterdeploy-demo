@@ -1,0 +1,18 @@
+# ── ProtectionPlan (LOCAL) 
+# Local protection = async with NO replicationConfigs block. Snapshots stay
+# on this cluster only — no Remote, no ReplicationTarget required.
+#
+# To add cross-cluster replication later: append a replicationConfigs[] list
+# referencing a ReplicationTarget CR (and create matching Remote/RT first).
+apiVersion: dataservices.nutanix.com/v1alpha1
+kind: ProtectionPlan
+metadata:
+  name: stateful-demo-local
+  namespace: ${APP_NAMESPACE}
+  labels:
+    app.kubernetes.io/part-of: ndk-gitops-demo
+spec:
+  protectionType: async
+  scheduleName: stateful-demo-hourly
+  retentionPolicy:
+    retentionCount: ${RETENTION_COUNT}
