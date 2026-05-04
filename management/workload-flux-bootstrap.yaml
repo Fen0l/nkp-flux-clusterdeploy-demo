@@ -97,7 +97,7 @@ spec:
     name: flux-clusterdeploy-demo
   path: ./clusters/nkp-wrkld-demo-flux-github01/app
   prune: true
-  wait: true
+  wait: false
   timeout: 5m
   postBuild:
     substituteFrom:
@@ -124,7 +124,7 @@ spec:
     name: flux-clusterdeploy-demo
   path: ./clusters/nkp-wrkld-demo-flux-github01/ndk
   prune: true
-  wait: true
+  wait: false
   timeout: 5m
   postBuild:
     substituteFrom:

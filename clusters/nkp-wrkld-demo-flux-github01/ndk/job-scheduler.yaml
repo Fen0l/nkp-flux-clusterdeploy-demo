@@ -1,8 +1,9 @@
-# ── JobScheduler 
-# Drives the cadence of automatic snapshots. Minimum interval is 60 minutes —
-# the controller rejects anything shorter.
+# ── JobScheduler
+# Drives the cadence of automatic snapshots. The minimum cadence is 60 minutes
+# — the controller rejects anything shorter.
 #
-# Note: this CRD lives under scheduler.nutanix.com, NOT dataservices.nutanix.com.
+# Schema: scheduler.nutanix.com/v1alpha1 (NOT dataservices.nutanix.com).
+# spec accepts ONE of: cronSchedule (string) | interval | daily | weekly | monthly.
 apiVersion: scheduler.nutanix.com/v1alpha1
 kind: JobScheduler
 metadata:
@@ -11,5 +12,4 @@ metadata:
   labels:
     app.kubernetes.io/part-of: ndk-gitops-demo
 spec:
-  schedule:
-    interval: ${SCHEDULE_INTERVAL_MINUTES}
+  cronSchedule: "${CRON_SCHEDULE}"

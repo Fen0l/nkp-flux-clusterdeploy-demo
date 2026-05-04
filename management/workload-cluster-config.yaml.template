@@ -14,9 +14,8 @@ data:
   APP_NAMESPACE: "demo-app"
   PVC_SIZE: "1Gi"
 
-  # ── NDK protection schedule 
-  # JobScheduler minimum is 60 minutes — below that the controller rejects.
-  SCHEDULE_INTERVAL_MINUTES: "60"
+  # ── NDK protection schedule (cron syntax — minimum 60-min cadence)
+  CRON_SCHEDULE: "0 * * * *"   # top of every hour
 
   # ── Retention (1 to 15) 
   RETENTION_COUNT: "5"

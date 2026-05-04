@@ -21,5 +21,5 @@ kind: StorageCluster
 metadata:
   name: pikachu                             # lowercase, matches the PE name
 spec:
-  storageServerUuid:    "<PE_UUID>"         # PE cluster UUID from PC
-  managementServerUuid: "<PC_UUID>"         # PC UUID from PC
+  storageServerUuid:    "000623f4-7174-ae2a-0000-00000001c1da"   # PIKACHU
+  managementServerUuid: "36feb6ab-2508-4451-8c73-bed665e94892"   # PC 10.12.54.8
