@@ -1,4 +1,4 @@
-# ── Flux GitRepository: points to the Git repo ───────────────────────────────
+# ── Flux GitRepository: points to the Git repo 
 # Apply on the NKP management cluster to tell Flux where to pull manifests from.
 #
 # Choose ONE url below (GitHub or GitLab) and uncomment the matching secretRef
@@ -10,13 +10,13 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
   name: flux-clusterdeploy-demo
-  namespace: gitops-mgmt-gitlab-jfbpb
+  namespace: flux-clusters-lh5x6
 spec:
   interval: 5m
   ref:
     branch: main
 
-  # ── Pick ONE source URL ────────────────────────────────────────────────────
+  # ── Pick ONE source URL 
 
   # GitHub
   url: https://github.com/Fen0l/nkp-flux-clusterdeploy-demo.git
@@ -27,7 +27,7 @@ spec:
   # Internal GitLab (air-gapped — uncomment to use)
   # url: https://gitlab.internal/infra/nkp-flux-clusterdeploy-demo.git
 
-  # ── Private repo authentication (uncomment matching block) ─────────────────
+  # ── Private repo authentication (uncomment matching block) 
 
   # GitHub PAT:
   # secretRef:

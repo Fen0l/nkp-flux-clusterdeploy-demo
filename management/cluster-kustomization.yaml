@@ -1,9 +1,9 @@
-# ── Phase 1: Create the Workspace ─────────────────────────────────────────────
+# ── Phase 1: Create the Workspace 
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: flux-demo-workspace
-  namespace: gitops-mgmt-gitlab-jfbpb
+  namespace: flux-clusters-lh5x6
 spec:
   interval: 10m
   retryInterval: 1m
@@ -16,14 +16,14 @@ spec:
   wait: true
   timeout: 5m
 ---
-# ── Phase 2a: Create companion Secrets in workspace namespace ─────────────────
+# ── Phase 2a: Create companion Secrets in workspace namespace 
 # Must exist BEFORE the Cluster CR — the CAREN preflight webhook validates
 # PC connectivity using these secrets during dry-run.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: nkp-wrkld-demo-flux-github01-secrets
-  namespace: gitops-mgmt-gitlab-jfbpb
+  namespace: flux-clusters-lh5x6
 spec:
   dependsOn:
     - name: flux-demo-workspace
@@ -46,13 +46,13 @@ spec:
         name: nkp-wrkld-demo-flux-github01-secrets
         optional: false
 ---
-# ── Phase 2b: Deploy the Cluster CR ──────────────────────────────────────────
+# ── Phase 2b: Deploy the Cluster CR 
 # Depends on 2a — companion secrets must exist for preflight validation.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
   name: nkp-wrkld-demo-flux-github01
-  namespace: gitops-mgmt-gitlab-jfbpb
+  namespace: flux-clusters-lh5x6
 spec:
   dependsOn:
     - name: nkp-wrkld-demo-flux-github01-secrets

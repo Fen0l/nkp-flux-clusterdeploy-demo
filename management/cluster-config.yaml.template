@@ -1,4 +1,4 @@
-# ── Template: ConfigMap for non-sensitive cluster configuration ───────────────
+# ── Template: ConfigMap for non-sensitive cluster configuration 
 #
 # Infrastructure values, networking, image names — nothing secret here.
 # One ConfigMap per cluster, named after the cluster.
@@ -10,23 +10,23 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nkp-wrkld-demo-flux-github01-config
-  namespace: gitops-mgmt-gitlab-jfbpb
+  namespace: flux-clusters-lh5x6
 data:
-  # ── Workspace namespace (auto-populated by the namespace-sync Job) ──────────
+  # ── Workspace namespace (auto-populated by the namespace-sync Job) 
   # Leave as-is — Phase 1.5 patches this with the real namespace.
   WORKSPACE_NAMESPACE: "pending-namespace-sync"
 
-  # ── Nutanix infrastructure ────────────────────────────────────────────────
+  # ── Nutanix infrastructure 
   PC_ENDPOINT: "10.12.54.8"
-  PE_CLUSTER: "PIKATCHU"
+  PE_CLUSTER: "PIKACHU"
   SUBNET: "pika-vlan52-workloads"
   STORAGE_CONTAINER: "nkp"
   VM_IMAGE: "nkp-rocky-9.7-release-cis-1.34.3-20260316170119.qcow2"
 
-  # ── Cluster networking ────────────────────────────────────────────────────
+  # ── Cluster networking 
   CONTROL_PLANE_VIP: "10.12.52.227"
   LB_IP_START: "10.12.52.228"
   LB_IP_END: "10.12.52.229"
 
-  # ── Air-gapped registry mirror ────────────────────────────────────────────
+  # ── Air-gapped registry mirror 
   REGISTRY_MIRROR_URL: "https://10.12.52.11/nkp"

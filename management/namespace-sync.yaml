@@ -1,4 +1,4 @@
-# ── ServiceAccount for Flux Kustomizations + namespace-sync Job ───────────────
+# ── ServiceAccount for Flux Kustomizations + namespace-sync Job 
 # Used by both Flux (to apply workspace/cluster resources) and the
 # namespace-sync Job (to patch the ConfigMap with the real namespace).
 ---
@@ -6,9 +6,9 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: flux-deployer
-  namespace: gitops-mgmt-gitlab-jfbpb
+  namespace: flux-clusters-lh5x6
 ---
-# ── ClusterRole: create workspaces, clusters, secrets ─────────────────────────
+# ── ClusterRole: create workspaces, clusters, secrets 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -42,14 +42,14 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: flux-deployer
-    namespace: gitops-mgmt-gitlab-jfbpb
+    namespace: flux-clusters-lh5x6
 ---
-# ── One-shot Job: patches ConfigMap with the real workspace namespace ─────────
+# ── One-shot Job: patches ConfigMap with the real workspace namespace 
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: namespace-sync-nkp-wrkld-demo-flux-github01
-  namespace: gitops-mgmt-gitlab-jfbpb
+  namespace: flux-clusters-lh5x6
 spec:
   ttlSecondsAfterFinished: 3600
   backoffLimit: 10
@@ -70,7 +70,7 @@ spec:
                 sleep 5
               done
               echo "Namespace: $NS"
-              kubectl -n gitops-mgmt-gitlab-jfbpb patch configmap \
+              kubectl -n flux-clusters-lh5x6 patch configmap \
                 nkp-wrkld-demo-flux-github01-config \
                 --type merge \
                 -p "{\"data\":{\"WORKSPACE_NAMESPACE\":\"$NS\"}}"
